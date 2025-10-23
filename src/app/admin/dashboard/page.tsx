@@ -42,19 +42,22 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    checkAuth()
-    fetchQuestionBanks()
+    checkAuthAndFetch()
+    
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         router.push('/admin/login')
+      } else if (event === 'SIGNED_IN' && session) {
+        // Re-check admin status when signed in
+        await verifyAdminStatus(session.user.email!)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const checkAuth = async () => {
+  const checkAuthAndFetch = async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
       if (error || !user) {
@@ -62,20 +65,26 @@ export default function AdminDashboard() {
         return
       }
 
-      // Verify user is admin
-      const { data: admin, error: adminError } = await supabase
-        .from('admins')
-        .select('email')
-        .eq('email', user.email)
-        .single()
-
-      if (adminError || !admin) {
-        router.push('/admin/login')
-      }
+      await verifyAdminStatus(user.email!)
+      await fetchQuestionBanks()
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/admin/login')
     }
+  }
+
+  const verifyAdminStatus = async (email: string) => {
+    const { data: admin, error } = await supabase
+      .from('admins')
+      .select('email')
+      .eq('email', email)
+      .single()
+
+    if (error || !admin) {
+      router.push('/admin/login')
+      return false
+    }
+    return true
   }
 
   const fetchQuestionBanks = async () => {
@@ -95,15 +104,8 @@ export default function AdminDashboard() {
   }
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut()
-      router.push('/admin/login')
-      router.refresh()
-    } catch (error) {
-      console.error('Logout error:', error)
-      // Force redirect even if logout fails
-      router.push('/admin/login')
-    }
+    await supabase.auth.signOut()
+    router.push('/admin/login')
   }
 
   const uploadFile = async (file: File): Promise<string> => {

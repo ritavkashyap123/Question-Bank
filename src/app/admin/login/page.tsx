@@ -38,7 +38,6 @@ export default function AdminLogin() {
         email,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/admin/dashboard`,
         },
       })
 
@@ -79,7 +78,6 @@ export default function AdminLogin() {
         if (admin) {
           // Redirect to admin dashboard
           router.push('/admin/dashboard')
-          router.refresh() // Refresh to update middleware
         } else {
           setError('Access denied. You are not authorized as an admin.')
           await supabase.auth.signOut()
