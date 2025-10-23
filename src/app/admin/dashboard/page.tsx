@@ -13,6 +13,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
+import ClientOnly from '@/components/ClientOnly'
 
 interface QuestionBankFormData {
   title: string
@@ -25,6 +26,18 @@ interface QuestionBankFormData {
 }
 
 export default function AdminDashboard() {
+  return (
+    <ClientOnly fallback={
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      </div>
+    }>
+      <AdminDashboardContent />
+    </ClientOnly>
+  )
+}
+
+function AdminDashboardContent() {
   const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -60,13 +73,16 @@ export default function AdminDashboard() {
   const checkAuthAndFetch = async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
+      
       if (error || !user) {
         router.push('/admin/login')
         return
       }
 
-      await verifyAdminStatus(user.email!)
-      await fetchQuestionBanks()
+      const isAdmin = await verifyAdminStatus(user.email!)
+      if (isAdmin) {
+        await fetchQuestionBanks()
+      }
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/admin/login')

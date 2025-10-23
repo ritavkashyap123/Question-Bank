@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { QuestionBankWithAdmin } from '@/types/database'
 import { supabase } from '@/lib/supabase'
 import { Download, Search, Filter, Calendar, MapPin, BookOpen, FileText } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import ClientOnly from '@/components/ClientOnly'
 
 interface FilterState {
   search: string
@@ -15,6 +15,18 @@ interface FilterState {
 }
 
 export default function QuestionBankTable() {
+  return (
+    <ClientOnly fallback={
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+      </div>
+    }>
+      <QuestionBankTableContent />
+    </ClientOnly>
+  )
+}
+
+function QuestionBankTableContent() {
   const [questionBanks, setQuestionBanks] = useState<QuestionBankWithAdmin[]>([])
   const [filteredBanks, setFilteredBanks] = useState<QuestionBankWithAdmin[]>([])
   const [loading, setLoading] = useState(true)

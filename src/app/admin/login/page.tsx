@@ -5,8 +5,21 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Mail, ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import ClientOnly from '@/components/ClientOnly'
 
 export default function AdminLogin() {
+  return (
+    <ClientOnly fallback={
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      </div>
+    }>
+      <AdminLoginContent />
+    </ClientOnly>
+  )
+}
+
+function AdminLoginContent() {
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState<'email' | 'otp'>('email')
@@ -69,15 +82,15 @@ export default function AdminLogin() {
         setError('Invalid OTP. Please try again.')
       } else if (data.user) {
         // Verify the user is an admin before redirecting
-        const { data: admin } = await supabase
+        const { data: admin, error: adminError } = await supabase
           .from('admins')
           .select('email')
           .eq('email', data.user.email)
           .single()
 
         if (admin) {
-          // Redirect to admin dashboard
-          router.push('/admin/dashboard')
+          // Use window.location for more reliable redirect
+          window.location.href = '/admin/dashboard'
         } else {
           setError('Access denied. You are not authorized as an admin.')
           await supabase.auth.signOut()

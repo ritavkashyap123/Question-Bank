@@ -1,3 +1,5 @@
+'use client'
+
 import QuestionBankTable from '@/components/QuestionBankTable'
 import { BookOpen, User, LogIn } from 'lucide-react'
 import Link from 'next/link'
