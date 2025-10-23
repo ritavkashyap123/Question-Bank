@@ -8,12 +8,9 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Upload, 
   LogOut, 
   BookOpen,
-  Download,
   Loader2,
-  AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -47,23 +44,36 @@ export default function AdminDashboard() {
   useEffect(() => {
     checkAuth()
     fetchQuestionBanks()
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        router.push('/admin/login')
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/admin/login')
-      return
-    }
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || !user) {
+        router.push('/admin/login')
+        return
+      }
 
-    // Verify user is admin
-    const { data: admin } = await supabase
-      .from('admins')
-      .select('email')
-      .eq('email', user.email)
-      .single()
+      // Verify user is admin
+      const { data: admin, error: adminError } = await supabase
+        .from('admins')
+        .select('email')
+        .eq('email', user.email)
+        .single()
 
-    if (!admin) {
+      if (adminError || !admin) {
+        router.push('/admin/login')
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
       router.push('/admin/login')
     }
   }
@@ -85,8 +95,15 @@ export default function AdminDashboard() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
+    try {
+      await supabase.auth.signOut()
+      router.push('/admin/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force redirect even if logout fails
+      router.push('/admin/login')
+    }
   }
 
   const uploadFile = async (file: File): Promise<string> => {

@@ -38,6 +38,7 @@ export default function AdminLogin() {
         email,
         options: {
           shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/admin/dashboard`,
         },
       })
 
@@ -68,8 +69,21 @@ export default function AdminLogin() {
       if (error) {
         setError('Invalid OTP. Please try again.')
       } else if (data.user) {
-        // Redirect to admin dashboard
-        router.push('/admin/dashboard')
+        // Verify the user is an admin before redirecting
+        const { data: admin } = await supabase
+          .from('admins')
+          .select('email')
+          .eq('email', data.user.email)
+          .single()
+
+        if (admin) {
+          // Redirect to admin dashboard
+          router.push('/admin/dashboard')
+          router.refresh() // Refresh to update middleware
+        } else {
+          setError('Access denied. You are not authorized as an admin.')
+          await supabase.auth.signOut()
+        }
       }
     } catch (error) {
       setError('An error occurred. Please try again.')
