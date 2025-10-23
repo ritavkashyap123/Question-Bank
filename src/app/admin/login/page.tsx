@@ -37,7 +37,7 @@ export default function AdminLogin() {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true,
         },
       })
 
